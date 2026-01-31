@@ -1,0 +1,28 @@
+[project]
+name = "window-quote-agent"
+version = "0.1.0"
+description = "智能报价与选品顾问 Agent"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "langgraph>=0.0.20",
+    "langchain>=0.1.0",
+    "openai>=1.0.0",
+    "pytest>=7.0.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-asyncio"]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["packages*", "apps*"]
+namespaces = false
