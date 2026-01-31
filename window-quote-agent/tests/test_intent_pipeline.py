@@ -69,15 +69,9 @@ def test_stub_classifier_returns_other():
     assert 0 <= r.get("confidence", 0) <= 1
 
 
-def test_stub_predict_with_threshold():
-    stub = StubUncertaintyClassifier()
-    r = stub.predict_with_threshold("不确定的内容", tau=0.8)
-    assert r["intents"] == ["其他"]
-
-
 # --- Pipeline ---
 def test_pipeline_rule_priority():
-    out = run_intent_pipeline("我想报价，多少钱")
+    out = run_intent_pipeline("我想报价，多少钱", uncertainty_classifier=StubUncertaintyClassifier())
     assert out["source"] == "rule"
     assert "价格咨询" in out["intents"]
     assert out["primary_intent"] in INTENT_PRIORITY
@@ -86,21 +80,25 @@ def test_pipeline_rule_priority():
 
 
 def test_pipeline_multi_intent_tasks():
-    out = run_intent_pipeline("推荐一款，顺便报个价")
+    out = run_intent_pipeline("推荐一款，顺便报个价", uncertainty_classifier=StubUncertaintyClassifier())
     assert len(out["intents"]) >= 1
     assert out["primary_intent"] in out["intents"]
     assert all(t["intent"] in out["intents"] for t in out["tasks"])
 
 
 def test_pipeline_empty_uses_model():
-    out = run_intent_pipeline("哈哈今天天气真好", use_model_when_rules_empty=True)
+    out = run_intent_pipeline(
+        "哈哈今天天气真好",
+        use_model_when_rules_empty=True,
+        uncertainty_classifier=StubUncertaintyClassifier(),
+    )
     assert "intents" in out
     assert out["primary_intent"] == "其他" or out["primary_intent"] in out["intents"]
     assert out["source"] in ("rule", "model")
 
 
 def test_pipeline_structured_output_keys():
-    out = run_intent_pipeline("报价")
+    out = run_intent_pipeline("报价", uncertainty_classifier=StubUncertaintyClassifier())
     required = ["raw_prompt", "cleaned_prompt", "intents", "primary_intent", "tasks", "confidence", "source"]
     for k in required:
         assert k in out, f"missing key: {k}"

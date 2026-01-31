@@ -17,6 +17,8 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest", "pytest-asyncio"]
+# 规则未命中时用 facebook/bart-large-mnli 零样本意图分类（需 transformers+torch）
+intent-model = ["transformers>=4.40.0", "torch", "accelerate"]
 
 [build-system]
 requires = ["setuptools>=61.0"]
