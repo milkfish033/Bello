@@ -19,7 +19,7 @@
 ## 第一阶段：骨架与基础设施 (Project Skeleton)
 **目标**：建立项目结构，配置依赖，确保环境可用。
 
-- [ ] **Task 1.1: 初始化项目结构与依赖**
+- [x] **Task 1.1: 初始化项目结构与依赖**
     - **操作**：创建 `window-quote-agent` 根目录。按照 `architecture.md` 第 4 节创建所有一级和二级文件夹（空文件夹即可）。初始化 `pyproject.toml`，添加 `fastapi`, `uvicorn`, `pydantic`, `langgraph`, `langchain`, `openai` (或兼容库), `pytest` 依赖。
     - **验证**：运行 `poetry install` (或 `uv sync`) 无报错。
     - **文件**：`pyproject.toml`, 目录结构。
