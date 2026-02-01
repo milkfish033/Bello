@@ -16,6 +16,7 @@ from packages.intent.uncertainty_classifier import (
     UncertaintyClassifierResult,
 )
 from packages.intent.pipeline import run_intent_pipeline
+from packages.intent.intent_check import intent_check, keyword_switch
 
 __all__ = [
     "preprocess",
@@ -31,4 +32,6 @@ __all__ = [
     "TaskItem",
     "INTENTS",
     "INTENT_PRIORITY",
+    "intent_check",
+    "keyword_switch",
 ]

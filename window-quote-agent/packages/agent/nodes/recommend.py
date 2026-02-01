@@ -28,6 +28,17 @@ def _parse_series_id_from_response(response: str) -> str | None:
         return None
 
 
+def _query_from_recommend_params(recommend_params: dict[str, Any]) -> str | None:
+    parts = []
+    for k in ("使用场景", "特殊需求", "价格预算", "参数"):
+        v = recommend_params.get(k)
+        if v and str(v).strip():
+            parts.append(str(v).strip())
+    if not parts:
+        return None
+    return " ".join(parts) + " 型材推荐"
+
+
 def recommend(
     state: AgentState,
     retrieve: Callable[[str], list[str]],
@@ -35,15 +46,19 @@ def recommend(
     chat_completion: Callable[..., str],
 ) -> dict[str, Any]:
     """
-    根据 state.requirements 或最后一条消息构造 query，检索 RAG，结合 catalog 列表，
-    调用 LLM 推荐 series_id，更新 state.selection 和 state.rag_context。
+    根据 state.recommend_params（产品推荐）或 state.requirements（报价）或最后一条消息构造 query，
+    检索 RAG，结合 catalog 列表，调用 LLM 推荐 series_id，更新 state.selection 和 state.rag_context。
     - retrieve(query) -> list[str] 文本片段
     - list_series() -> list[{"id": str, "name": str}, ...]
     """
     messages = state.get("messages") or []
     requirements = state.get("requirements") or {}
+    recommend_params = state.get("recommend_params") or {}
     query = "窗户型材选型 断桥铝 系列推荐"
-    if requirements:
+    q_from_recommend = _query_from_recommend_params(recommend_params)
+    if q_from_recommend:
+        query = q_from_recommend
+    elif requirements:
         parts = []
         if requirements.get("w") and requirements.get("h"):
             parts.append(f"尺寸宽{requirements['w']}米高{requirements['h']}米")

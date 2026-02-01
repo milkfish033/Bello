@@ -51,9 +51,44 @@ def _remove_filler_words(text: str) -> str:
     return re.sub(r"\s+", " ", t).strip()
 
 
+SYN_MAP = {
+    # 结构与安全
+    "晃动": "不稳定", "摇晃": "不稳定", "松动": "不稳定", "不稳": "不稳定",
+    "掉下去": "坠落风险", "小孩爬": "安全防范", "防盗": "防撬性能",
+    "变形": "型材挠度过大", "弯了": "型材变形", "玻璃碎": "钢化玻璃自爆",
+    "小孩": "安全防范", "孩子": "安全防范",
+    
+    # 环境与气密性 (性能三性)
+    "漏风": "密封性差", "进风": "密封性差", "漏水": "水密性失效",
+    "渗水": "水密性失效", "飘雨": "水密性失效", "刮风": "大风",
+    "风很大": "大风", "台风": "大风", "很晒": "紫外线阻隔",
+    "不隔热": "隔热性能差", "冒汗": "冷凝结露", "起雾": "冷凝结露",
+    
+    # 噪音与异响
+    "一直响": "噪音", "蝉鸣声": "噪音", "哨音": "噪音",
+    "隔音不好": "隔音性能差", "外面声音大": "噪音",
+    
+    # 五金与操作
+    "推不动": "启闭障碍", "卡住了": "启闭障碍", "关不严": "锁闭失效",
+    "把手松": "五金件松动", "生锈": "五金件腐蚀", "把手断了": "执手损坏",
+    
+    # 玻璃与遮阳
+    "看不见里面": "隐私保护", "反光": "镀膜玻璃", "遮光": "中空百叶",
+    "遥控": "电动开窗器", "智能窗": "电动智能控制"
+}
+
+
+def map(text: str) -> str:
+    """将口语化表述转化为专业术语"""
+    for k, v in SYN_MAP.items():
+        text.replace(k, v)
+    return text 
+
+
+
 def preprocess(raw_prompt: str) -> PreprocessOutput:
     """
-    文本清洗：全角→半角、合并重复标点、去除语气词。
+    文本清洗：全角→半角、合并重复标点、去除语气词, 映射专业术语。
     不做语义判断，输出保留 raw_prompt 与 cleaned_prompt。
     """
     if not raw_prompt or not isinstance(raw_prompt, str):
@@ -63,5 +98,6 @@ def preprocess(raw_prompt: str) -> PreprocessOutput:
     t = _full_to_half(t)
     t = _merge_repeated_punctuation(t)
     t = _remove_filler_words(t)
+    t = map(t)
     cleaned_prompt = t.strip()
     return {"raw_prompt": raw_prompt, "cleaned_prompt": cleaned_prompt}

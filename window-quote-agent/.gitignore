@@ -20,3 +20,6 @@ data/vectorstore/
 
 # 日志
 *.log
+
+# 脚本生成的图
+agent_graph.png

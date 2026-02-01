@@ -40,21 +40,32 @@ def test_graph_topology_contains_expected_nodes():
     )
     topo = get_graph_topology(graph)
     nodes = topo.get("nodes", [])
-    expected = {"router", "collect_requirements", "recommend", "price_quote", "generate_quote"}
+    expected = {
+        "intent",
+        "router",
+        "chat",
+        "collect_recommend_params",
+        "rag_query",
+        "collect_requirements",
+        "recommend",
+        "price_quote",
+        "generate_quote",
+    }
     assert expected.issubset(set(nodes)), f"Expected nodes {expected}, got {nodes}"
 
 
 def test_graph_invoke_quote_flow():
-    """端到端：intent=quote 时走完报价链路，state 含 quote_md。"""
+    """端到端：current_intent=价格咨询 时走完报价链路，state 含 quote_md。"""
     def mock_chat(messages):
         content = (messages or [{}])[0].get("content", "") if messages else ""
-        if "路由" in content or "意图" in content:
-            return '{"intent": "quote"}'
         if "需求" in content or "提取" in content:
             return '{"w": 3.0, "h": 2.0}'
         if "推荐" in content or "系列" in content:
             return '{"series_id": "65"}'
-        return '{"intent": "quote"}'
+        return "好的"
+
+    def stub_intent_pipeline(_raw: str):
+        return {"primary_intent": "价格咨询", "intents": ["价格咨询"], "cleaned_prompt": ""}
 
     graph = build_quote_graph(
         chat_completion=mock_chat,
@@ -65,6 +76,7 @@ def test_graph_invoke_quote_flow():
             "breakdown": [{"item": "窗面积", "qty": r.get("w", 0) * r.get("h", 0), "unit_price": 500, "amount": (r.get("w", 0) * r.get("h", 0)) * 500}],
             "series_id": s.get("series_id", ""),
         },
+        run_intent_pipeline=stub_intent_pipeline,
     )
     initial: dict = {
         "messages": [{"role": "user", "content": "我想装窗户，高2米宽3米"}],

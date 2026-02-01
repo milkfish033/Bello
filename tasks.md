@@ -94,37 +94,37 @@
 ## 第四阶段：Agent 工作流 (LangGraph Workflow)
 **目标**：这是最复杂的部分。我们将根据 `architecture.md` 逐步构建图节点。
 
-- [ ] **Task 4.1: 定义 Agent State**
+- [x] **Task 4.1: 定义 Agent State**
     - **操作**：实现 `packages/agent/state.py`。定义 `AgentState` TypedDict，包含 `messages`, `requirements`, `selection`, `price_result`, `step`。
     - **验证**：无逻辑验证，代码静态检查通过即可。
     - **文件**：`packages/agent/state.py`。
 
-- [ ] **Task 4.2: 节点开发 - Router**
+- [x] **Task 4.2: 节点开发 - Router**
     - **操作**：实现 `packages/agent/nodes/router.py`。编写 Prompt 让 LLM 判断用户是“闲聊/咨询”还是“想要报价”。
     - **验证**：编写测试，输入 "我想装窗户"，断言输出意图为 "quote"。
     - **文件**：`packages/agent/nodes/router.py`。
 
-- [ ] **Task 4.3: 节点开发 - Requirement Collection**
+- [x] **Task 4.3: 节点开发 - Requirement Collection**
     - **操作**：实现 `packages/agent/nodes/collect_requirements.py`。该节点负责调用 LLM 提取用户意图中的尺寸、地点等，并更新 `state.requirements`。
     - **验证**：输入 "我家窗户高2米宽3米"，断言 state 中提取出 `{"h": 2.0, "w": 3.0}`。
     - **文件**：`packages/agent/nodes/collect_requirements.py`。
 
-- [ ] **Task 4.4: 节点开发 - Recommendation (RAG Integration)**
+- [x] **Task 4.4: 节点开发 - Recommendation (RAG Integration)**
     - **操作**：实现 `packages/agent/nodes/recommend.py`。调用 Task 3.3 的检索器，结合 Catalog 数据，让 LLM 推荐一个系列。
     - **验证**：模拟输入，检查节点输出是否包含检索到的 Context 和推荐的 Series ID。
     - **文件**：`packages/agent/nodes/recommend.py`。
 
-- [ ] **Task 4.5: 节点开发 - Pricing (Tool Integration)**
+- [x] **Task 4.5: 节点开发 - Pricing (Tool Integration)**
     - **操作**：实现 `packages/agent/nodes/price_quote.py`。读取 `state.requirements` 和 `state.selection`，调用 Task 2.6 的定价工具，将结果写入 `state.price_result`。
     - **验证**：单元测试：构造完整的 state 输入，断言 state 更新了正确的价格数据。
     - **文件**：`packages/agent/nodes/price_quote.py`。
 
-- [ ] **Task 4.6: 节点开发 - Generate Quote**
+- [x] **Task 4.6: 节点开发 - Generate Quote**
     - **操作**：实现 `packages/agent/nodes/generate_quote.py`。根据 `price_result` 生成 Markdown 格式的报价单。
     - **验证**：检查生成的 Markdown 是否包含“总价”和“明细表格”。
     - **文件**：`packages/agent/nodes/generate_quote.py`。
 
-- [ ] **Task 4.7: 构建 LangGraph 图**
+- [x] **Task 4.7: 构建 LangGraph 图**
     - **操作**：在 `packages/agent/graph.py` 中将上述节点连接起来。定义 `workflow.add_edge` 和 `conditional_edges`。
     - **验证**：使用 `langgraph` 的绘图功能（如果可用）或打印 graph 结构，确保拓扑正确。
     - **文件**：`packages/agent/graph.py`。

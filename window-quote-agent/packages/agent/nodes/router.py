@@ -74,3 +74,11 @@ def create_router_node(
         intent_classifier=intent_classifier,
         chat_completion=chat_completion,
     )
+
+
+def router_by_current_intent(state: AgentState) -> dict[str, Any]:
+    """
+    按 state.current_intent 做路由时的「透传」节点：不修改 state，仅用于图上占位，
+    实际分支由 conditional_edges 根据 state.current_intent 决定。
+    """
+    return {"step": "router"}

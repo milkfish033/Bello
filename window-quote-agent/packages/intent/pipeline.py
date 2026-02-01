@@ -82,15 +82,15 @@ def run_intent_pipeline(
     完整流水线：Preprocess → Rule-based →（可选）UncertaintyClassifier → 聚合 → 主次意图 → Task Split。
     返回结构化输出，供后续 agent 使用。
     """
-    # Step 1
+    # Step 1 初步清洗加关键词query改写
     pre = preprocess(raw_prompt)
     raw_prompt = pre["raw_prompt"]
     cleaned_prompt = pre["cleaned_prompt"]
 
-    # Step 2
+    # Step 2 规则命中
     rule_out = rule_based_intent_tagging(cleaned_prompt)
     rule_intents = rule_out["rule_intents"]
-    rule_hits = rule_out["rule_hits"]
+    
 
     # Step 3：仅当 rule_intents 为空时调用不确定性分类器（默认 facebook/bart-large-mnli）
     model_result: dict[str, Any] | None = None
