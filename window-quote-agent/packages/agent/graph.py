@@ -13,7 +13,7 @@ from packages.agent.nodes.intent_node import create_intent_node
 from packages.agent.nodes.price_quote import create_price_quote_node
 from packages.agent.nodes.recommend import create_recommend_node
 from packages.agent.nodes.router import create_router_planner_node
-from packages.agent.tools import create_rag_tool
+from packages.agent.tools import bm25_retrieve, create_rag_tool
 
 # router 只做 planner：输出下一节点；是否 END 由 check 节点决定
 ROUTER_NEXT_NODES = (
@@ -43,11 +43,16 @@ def _route_after_router(state: AgentState) -> str:
     if last_step == "price_quote":
         return "generate_quote"
     if last_step == "recommend" and intent == "价格咨询":
-        return "price_quote"
+        # 进入报价前需有具体产品型号（如 series_id），否则回到 chat 继续收集/确认
+        if state.get("selection_ready") or (state.get("selection") or {}).get("series_id"):
+            return "price_quote"
+        return "chat"
     if last_step == "recommend":
         return "chat"  # fallback 不结束，由 check 决定
-    if last_step == "collect_requirements":
+    if last_step == "collect_requirements" and state.get("requirements_ready"):
         return "recommend"
+    if last_step == "collect_requirements":
+        return "chat"
     if last_step == "collect_recommend_params" and state.get("recommend_params_ready"):
         return "recommend"
     if last_step == "collect_recommend_params":
@@ -65,7 +70,7 @@ def _route_after_router(state: AgentState) -> str:
 def build_quote_graph(
     retrieve: Callable[[str], list[str]],
     list_series: Callable[[], list[dict[str, Any]]],
-    calculate_price: Callable[[dict[str, Any], dict[str, Any]], dict[str, Any]],
+    calculate_price: Callable[[dict[str, Any], dict[str, Any]], dict[str, Any]] | None = None,
     *,
     chat_completion: Callable[..., str] | None = None,
     chat_completions: dict[str, Callable[..., str]] | None = None,
@@ -84,6 +89,10 @@ def build_quote_graph(
     """
     from packages.intent.pipeline import run_intent_pipeline as _run_intent_pipeline
 
+    if calculate_price is None:
+        from packages.tools.pricing import calculate_price as _default_calculate_price
+        calculate_price = _default_calculate_price
+
     intent_fn = run_intent_pipeline or _run_intent_pipeline
 
     def _chat(node_name: str) -> Callable[..., str]:
@@ -96,8 +105,11 @@ def build_quote_graph(
 
     builder = StateGraph(AgentState)
 
-    rag_tool = create_rag_tool(retrieve)
-    chat_tools = [rag_tool] if router_llm is not None else None
+    # 使用传入的 retrieve，或 tools 里定义的默认 bm25_retrieve
+    _retrieve = retrieve or bm25_retrieve
+    rag_tool = create_rag_tool(_retrieve)
+    # RAG 工具始终传入 chat 节点；仅当提供 router_llm 时 chat 会走 tool call 分支
+    chat_tools = [rag_tool]
     builder.add_node("intent", create_intent_node(intent_fn, stale_threshold=stale_threshold))
     builder.add_node("router", create_router_planner_node(llm=router_llm))
     builder.add_node("check", create_check_node(llm=router_llm))
@@ -107,7 +119,8 @@ def build_quote_graph(
     )
     builder.add_node("collect_recommend_params", create_collect_recommend_params_node(_chat("collect_recommend_params")))
     builder.add_node("collect_requirements", create_collect_requirements_node(_chat("collect_requirements")))
-    builder.add_node("recommend", create_recommend_node(retrieve, list_series, _chat("recommend")))
+    # recommend 与 chat 共用同一 RAG 检索（_retrieve），产品推荐/价格咨询在收集到足够信息后都会走 RAG 推荐
+    builder.add_node("recommend", create_recommend_node(_retrieve, list_series, _chat("recommend")))
     builder.add_node("price_quote", create_price_quote_node(calculate_price))
     builder.add_node("generate_quote", generate_quote)
 
