@@ -27,8 +27,11 @@ ROUTER_NEXT_NODES = (
 
 
 def _route_after_check(state: AgentState) -> str:
-    """check 之后：若 should_end 则 END，否则交给 router（planner）决定下一步。"""
+    """check 之后：若 should_end 或 step_count >= max_step 则 END，否则交给 router（planner）决定下一步。max_step 默认 10。"""
     if state.get("should_end"):
+        return "END"
+    max_step = state.get("max_step") if state.get("max_step") is not None else 10
+    if (state.get("step_count") or 0) >= max_step:
         return "END"
     return "router"
 
