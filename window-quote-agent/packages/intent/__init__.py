@@ -11,7 +11,7 @@ from packages.intent.preprocess import preprocess
 from packages.intent.rule_intents import rule_based_intent_tagging
 from packages.intent.uncertainty_classifier import (
     UncertaintyClassifier,
-    RealZeroShotClassifier,
+    GptMiniUncertaintyClassifier,
     StubUncertaintyClassifier,
     UncertaintyClassifierResult,
 )
@@ -22,7 +22,7 @@ __all__ = [
     "preprocess",
     "rule_based_intent_tagging",
     "UncertaintyClassifier",
-    "RealZeroShotClassifier",
+    "GptMiniUncertaintyClassifier",
     "StubUncertaintyClassifier",
     "UncertaintyClassifierResult",
     "run_intent_pipeline",

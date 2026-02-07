@@ -4,7 +4,7 @@ import re
 from pathlib import Path
 from typing import Any, Callable
 
-from packages.agent.state import AgentState
+from packages.agent.state import AgentState, next_step_count
 
 RECOMMEND_PROMPT_PATH = Path(__file__).resolve().parent.parent / "prompts" / "recommend.md"
 
@@ -88,9 +88,12 @@ def recommend(
         series_id = str(series_list[0].get("id", ""))
     selection = dict(state.get("selection") or {})
     selection["series_id"] = series_id or ""
+    selection_ready = bool(series_id and str(series_id).strip())
     return {
         "step": "recommend",
+        "step_count": next_step_count(state),
         "selection": selection,
+        "selection_ready": selection_ready,
         "rag_context": rag_context,
     }
 

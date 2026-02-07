@@ -13,7 +13,7 @@ from packages.intent.preprocess import preprocess
 from packages.intent.rule_intents import rule_based_intent_tagging
 from packages.intent.uncertainty_classifier import (
     UncertaintyClassifier,
-    RealZeroShotClassifier,
+    GptMiniUncertaintyClassifier,
 )
 
 
@@ -92,10 +92,10 @@ def run_intent_pipeline(
     rule_intents = rule_out["rule_intents"]
     
 
-    # Step 3：仅当 rule_intents 为空时调用不确定性分类器（默认 facebook/bart-large-mnli）
+    # Step 3：仅当 rule_intents 为空时调用不确定性分类器（默认 gpt-4o-mini）
     model_result: dict[str, Any] | None = None
     if use_model_when_rules_empty and (not rule_intents):
-        classifier = uncertainty_classifier or RealZeroShotClassifier()
+        classifier = GptMiniUncertaintyClassifier()
         model_result = classifier.predict(cleaned_prompt)
         if model_result.get("confidence", 0) < tau:
             model_result = {"intents": ["其他"], "confidence": model_result.get("confidence", 0)}

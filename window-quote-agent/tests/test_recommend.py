@@ -25,6 +25,7 @@ def test_recommend_outputs_selection_and_rag_context():
     out = recommend(state, _mock_retrieve, _mock_list_series, _mock_chat)
     assert "selection" in out
     assert out["selection"].get("series_id") == "65"
+    assert out.get("selection_ready") is True
     assert "rag_context" in out
     assert any("65" in c or "断桥铝" in c for c in out["rag_context"])
     assert out["step"] == "recommend"

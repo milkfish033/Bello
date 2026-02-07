@@ -4,7 +4,7 @@ import re
 from pathlib import Path
 from typing import Any, Callable
 
-from packages.agent.state import AgentState
+from packages.agent.state import AgentState, next_step_count
 
 COLLECT_RECOMMEND_PROMPT_PATH = Path(__file__).resolve().parent.parent / "prompts" / "collect_recommend_params.md"
 
@@ -65,12 +65,14 @@ def collect_recommend_params(
         messages.append({"role": "assistant", "content": _ask_message()})
         return {
             "step": "collect_recommend_params",
+            "step_count": next_step_count(state),
             "messages": messages,
             "recommend_params": merged,
             "recommend_params_ready": False,
         }
     return {
         "step": "collect_recommend_params",
+        "step_count": next_step_count(state),
         "recommend_params": merged,
         "recommend_params_ready": True,
     }

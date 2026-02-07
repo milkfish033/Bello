@@ -1,7 +1,7 @@
 """意图节点：跑 intent pipeline 或 intent_check，更新 state.current_intent 与 state.turns_with_same_intent。"""
 from typing import Any, Callable
 
-from packages.agent.state import AgentState
+from packages.agent.state import AgentState, next_step_count
 from packages.intent.intent_check import intent_check
 from packages.intent.pipeline import run_intent_pipeline
 from packages.intent.schemas import INTENTS
@@ -37,8 +37,10 @@ def resolve_intent(
             primary = "其他"
         return {
             "step": "intent",
+            "step_count": next_step_count(state),
             "current_intent": primary,
             "turns_with_same_intent": 1,
+            "rag_context": [],  # 新轮开始时清空，供 chat→router 时写入本轮 RAG 结果
         }
 
     new_intent, new_turns = intent_check(
@@ -50,8 +52,10 @@ def resolve_intent(
     )
     return {
         "step": "intent",
+        "step_count": next_step_count(state),
         "current_intent": new_intent,
         "turns_with_same_intent": new_turns,
+        "rag_context": [],  # 新轮开始时清空
     }
 
 

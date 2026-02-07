@@ -11,18 +11,27 @@ dependencies = [
     "pydantic-settings>=2.0.0",
     "langgraph>=0.0.20",
     "langchain>=0.1.0",
+    "langchain-openai>=0.1.0",
+    "langchain-core>=0.2.0",
+    "langchain-community>=0.3.0",
     "openai>=1.0.0",
     "pytest>=7.0.0",
 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-asyncio"]
-# 规则未命中时用 facebook/bart-large-mnli 零样本意图分类（需 transformers+torch）
-intent-model = ["transformers>=4.40.0", "torch", "accelerate"]
+dev = ["pytest", "pytest-asyncio", "pytest-timeout"]
+# 意图分类已改为 gpt-4o-mini（openai），以下仅作其他本地模型用
+# intent-model = ["transformers>=4.40.0", "torch", "accelerate"]
+# chat 节点用本地 Hugging Face 模型（Milkfish033/deepseek-r1-1.5b-merged 等）
+chat-hf = ["transformers>=4.40.0", "torch", "accelerate"]
 
-[build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+# 定位测试卡住：安装 pytest-timeout 后可用 --timeout=30，超时会报出卡住的用例名
+[tool.pytest.ini_options]
+markers = [
+    "slow: 需加载 HF 模型或网络，跳过可加 -m 'not slow'",
+]
+# timeout = 30
+# timeout_method = "thread"
 
 [tool.setuptools.packages.find]
 where = ["."]

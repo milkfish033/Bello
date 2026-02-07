@@ -43,9 +43,9 @@ def test_graph_topology_contains_expected_nodes():
     expected = {
         "intent",
         "router",
+        "check",
         "chat",
         "collect_recommend_params",
-        "rag_query",
         "collect_requirements",
         "recommend",
         "price_quote",

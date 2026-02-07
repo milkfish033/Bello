@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     APP_ENV: str = "dev"
     MODEL_BASE_URL: str = "http://localhost:8000/v1"
     MODEL_NAME: str = "deepseek-r1-lora"
+    API_KEY: str = "dummy"  # 本地/内网可随便填，OpenAI/DeepSeek 等填真实 key
 
 
 def get_settings() -> Settings:

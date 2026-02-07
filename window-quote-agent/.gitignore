@@ -3,8 +3,31 @@
 venv/
 env/
 
-# 环境变量（含密钥）
+# ========== API Key / 密钥 / 敏感配置 ==========
 .env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.test
+*.pem
+.secrets/
+secrets/
+*.key
+credentials.json
+api_keys.json
+
+# ========== 原始数据 / 源数据 ==========
+/data/
+raw/
+raw_data/
+source_data/
+# RAG brochure 原始素材
+**/brochure/pages/
+**/brochure/*.pdf
+**/*_raw.json
+**/*_raw.csv
+*.faiss
 
 # Python
 __pycache__/
@@ -13,10 +36,6 @@ __pycache__/
 .eggs/
 dist/
 build/
-
-# 向量库与数据
-data/vectorstore/
-*.faiss
 
 # 日志
 *.log

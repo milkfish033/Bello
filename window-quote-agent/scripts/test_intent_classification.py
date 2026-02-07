@@ -8,7 +8,7 @@
   PYTHONPATH=. python scripts/test_intent_classification.py --stub   # 仅 Stub，不加载模型
 
 规则未命中时的分类方式：
-  默认：facebook/bart-large-mnli 零样本分类（需 pip install transformers torch）。
+  默认：OpenAI gpt-4o-mini 意图分类（需配置 OPENAI_API_KEY）。
   --stub：不加载模型，规则未命中时返回「其他」。
 """
 import argparse
@@ -21,7 +21,7 @@ if str(ROOT) not in sys.path:
 
 from packages.intent import (
     run_intent_pipeline,
-    RealZeroShotClassifier,
+    GptMiniUncertaintyClassifier,
     StubUncertaintyClassifier,
 )
 
@@ -64,8 +64,8 @@ def main() -> None:
         classifier = StubUncertaintyClassifier()
         print("使用 StubUncertaintyClassifier（规则未命中时返回「其他」）\n")
     else:
-        classifier = RealZeroShotClassifier()
-        print("使用 RealZeroShotClassifier（facebook/bart-large-mnli）\n")
+        classifier = GptMiniUncertaintyClassifier()
+        print("使用 GptMiniUncertaintyClassifier（gpt-4o-mini）\n")
 
     prompts = [args.prompt] if args.prompt else SAMPLE_PROMPTS
 

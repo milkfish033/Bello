@@ -1,0 +1,42 @@
+:root {
+  --bg: #ffffff;
+  --bg-input: #f4f4f4;
+  --bg-input-hover: #ebebeb;
+  --border: #e5e5e5;
+  --text: #0d0d0d;
+  --text-muted: #6b6b6b;
+  --accent: #e6a429;
+  --accent-hover: #d49420;
+  --radius: 1.25rem;
+  --radius-sm: 0.75rem;
+  --font: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  background: none;
+}
+
+textarea {
+  font-family: inherit;
+  resize: none;
+}
