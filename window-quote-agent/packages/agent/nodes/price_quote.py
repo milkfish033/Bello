@@ -1,7 +1,7 @@
 """报价节点：根据 requirements 与 selection 调用定价工具，写入 state.price_result。"""
 from typing import Any, Callable
 
-from packages.agent.state import AgentState, next_step_count
+from packages.agent.state import AgentState, append_thinking_step, next_step_count
 
 
 def price_quote(
@@ -17,7 +17,13 @@ def price_quote(
     requirements = state.get("requirements") or {}
     selection = state.get("selection") or {}
     result = calculate_price(requirements, selection)
-    return {"step": "price_quote", "step_count": next_step_count(state), "price_result": result}
+    return {
+        "step": "price_quote",
+        "step_count": next_step_count(state),
+        "price_result": result,
+        "flow_stage": "price_quote",
+        "thinking_steps": append_thinking_step(state, "计算报价金额"),
+    }
 
 
 def create_price_quote_node(

@@ -1,7 +1,7 @@
-"""意图节点：跑 intent pipeline 或 intent_check，更新 state.current_intent 与 state.turns_with_same_intent。"""
+"""意图节点：跑 intent pipeline 或 intent_check，输出 current_intent 作为**参考**，不强控路由。"""
 from typing import Any, Callable
 
-from packages.agent.state import AgentState, next_step_count
+from packages.agent.state import AgentState, append_thinking_step, next_step_count
 from packages.intent.intent_check import intent_check
 from packages.intent.pipeline import run_intent_pipeline
 from packages.intent.schemas import INTENTS
@@ -22,8 +22,8 @@ def resolve_intent(
     stale_threshold: int = 3,
 ) -> dict[str, Any]:
     """
-    首轮用 run_intent_pipeline 得到 current_intent；后续轮用 intent_check（关键词 + 长时间软校验）。
-    返回 { current_intent, turns_with_same_intent, step }。
+    每轮均做意图识别，输出 current_intent、turns_with_same_intent 作为**参考**；
+    路由由 router 综合意图、flow_stage、对话等自由判断，不在此强制锁定。
     """
     user_message = _last_user_message(state)
     current = (state.get("current_intent") or "").strip()
@@ -41,6 +41,7 @@ def resolve_intent(
             "current_intent": primary,
             "turns_with_same_intent": 1,
             "rag_context": [],  # 新轮开始时清空，供 chat→router 时写入本轮 RAG 结果
+            "thinking_steps": append_thinking_step(state, f"识别用户意图：{primary}"),
         }
 
     new_intent, new_turns = intent_check(
@@ -56,6 +57,7 @@ def resolve_intent(
         "current_intent": new_intent,
         "turns_with_same_intent": new_turns,
         "rag_context": [],  # 新轮开始时清空
+        "thinking_steps": append_thinking_step(state, f"识别用户意图：{new_intent}"),
     }
 
 

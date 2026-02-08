@@ -6,11 +6,22 @@ import type { Message } from "./types";
 
 const API_BASE = "/api";
 
-async function sendMessage(message: string): Promise<{ reply: string; quote_md?: string; current_intent?: string }> {
+async function sendMessage(
+  message: string,
+  sessionId: string | null
+): Promise<{
+  reply: string;
+  quote_md?: string;
+  current_intent?: string;
+  session_id: string;
+  thinking_steps?: string[];
+}> {
+  const body: { message: string; session_id?: string } = { message };
+  if (sessionId) body.session_id = sessionId;
   const res = await fetch(`${API_BASE}/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message }),
+    body: JSON.stringify(body),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }));
@@ -23,6 +34,7 @@ export default function App() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
+  const sessionIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
@@ -36,7 +48,8 @@ export default function App() {
     setMessages((prev) => [...prev, { role: "assistant", content: "", status: "loading" }]);
 
     try {
-      const data = await sendMessage(text.trim());
+      const data = await sendMessage(text.trim(), sessionIdRef.current);
+      if (data.session_id) sessionIdRef.current = data.session_id;
       setMessages((prev) => {
         const next = [...prev];
         const last = next[next.length - 1];
@@ -46,6 +59,7 @@ export default function App() {
             content: data.reply,
             quote_md: data.quote_md,
             current_intent: data.current_intent,
+            thinking_steps: data.thinking_steps ?? undefined,
           };
         }
         return next;

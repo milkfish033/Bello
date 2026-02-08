@@ -10,6 +10,14 @@ def next_step_count(state: "AgentState") -> int:
     return (state.get("step_count") or 0) + 1
 
 
+def append_thinking_step(state: "AgentState", step: str) -> list[str]:
+    """在现有 thinking_steps 后追加一条思考步骤，返回新列表（用于节点 return）。"""
+    current = state.get("thinking_steps") or []
+    if not step.strip():
+        return current
+    return [*current, step.strip()]
+
+
 class AgentState(TypedDict, total=False):
     """LangGraph 图内共享状态。"""
 
@@ -39,3 +47,7 @@ class AgentState(TypedDict, total=False):
     plan_tasks: list[dict[str, Any]]  # 拆分后的子任务列表，供下游节点参考
     # Check 节点输出：是否结束本轮（由 check 用 GPT-4o 决定，不结束则交给 router）
     should_end: bool
+    # 显式流程阶段：报价流程中锁定意图与路由，避免补充参数被误判为「其他」
+    flow_stage: str  # "" | "collect_requirements" | "price_quote"；在对应节点写入，generate_quote 结束时清空
+    # 思考过程：每轮对话各节点追加简短描述，供前端展示（类似 Cursor 的思考过程）
+    thinking_steps: list[str]

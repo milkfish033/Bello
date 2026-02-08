@@ -4,7 +4,7 @@ import re
 from pathlib import Path
 from typing import Any, Callable
 
-from packages.agent.state import AgentState, next_step_count
+from packages.agent.state import AgentState, append_thinking_step, next_step_count
 
 COLLECT_RECOMMEND_PROMPT_PATH = Path(__file__).resolve().parent.parent / "prompts" / "collect_recommend_params.md"
 
@@ -25,7 +25,7 @@ def _parse_recommend_params(response: str) -> dict[str, Any]:
         data = json.loads(text)
         if not isinstance(data, dict):
             return {}
-        return {k: str(v).strip() for k in RECOMMEND_PARAM_KEYS if k in data and v is not None and str(v).strip()}
+        return {k: str(data[k]).strip() for k in RECOMMEND_PARAM_KEYS if k in data and data[k] is not None and str(data[k]).strip()}
     except (json.JSONDecodeError, TypeError):
         return {}
 
@@ -69,12 +69,14 @@ def collect_recommend_params(
             "messages": messages,
             "recommend_params": merged,
             "recommend_params_ready": False,
+            "thinking_steps": append_thinking_step(state, "收集推荐参数（场景/需求/预算等）"),
         }
     return {
         "step": "collect_recommend_params",
         "step_count": next_step_count(state),
         "recommend_params": merged,
         "recommend_params_ready": True,
+        "thinking_steps": append_thinking_step(state, "收集推荐参数（场景/需求/预算等）"),
     }
 
 

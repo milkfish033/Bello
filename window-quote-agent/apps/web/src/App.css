@@ -166,6 +166,52 @@
   font-weight: 600;
 }
 
+/* 思考过程（类似 Cursor 可折叠） */
+.message-thinking {
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(102, 126, 234, 0.08);
+  border: 1px solid rgba(102, 126, 234, 0.2);
+  border-radius: var(--radius-sm);
+  font-size: 0.8125rem;
+}
+
+.message-thinking-summary {
+  cursor: pointer;
+  color: var(--text-muted);
+  list-style: none;
+  user-select: none;
+}
+
+.message-thinking-summary::-webkit-details-marker {
+  display: none;
+}
+
+.message-thinking-summary::before {
+  content: "▸ ";
+  display: inline-block;
+  transition: transform 0.15s;
+}
+
+.message-thinking[open] .message-thinking-summary::before {
+  transform: rotate(90deg);
+}
+
+.message-thinking-steps {
+  margin: 0.5rem 0 0 1rem;
+  padding-left: 0.5rem;
+  color: var(--text);
+  line-height: 1.5;
+}
+
+.message-thinking-steps li {
+  margin-bottom: 0.25rem;
+}
+
+.message-thinking-steps li:last-child {
+  margin-bottom: 0;
+}
+
 .message-intent {
   margin-top: 0.5rem;
   font-size: 0.75rem;

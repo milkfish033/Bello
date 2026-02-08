@@ -5,7 +5,7 @@ import re
 from pathlib import Path
 from typing import Any, Callable
 
-from packages.agent.state import AgentState, next_step_count
+from packages.agent.state import AgentState, append_thinking_step, next_step_count
 
 ROUTER_PROMPT_PATH = Path(__file__).resolve().parent.parent / "prompts" / "router.md"
 ROUTER_PLANNER_PROMPT_PATH = Path(__file__).resolve().parent.parent / "prompts" / "router_planner.md"
@@ -92,7 +92,7 @@ def _parse_planner_response(response: str) -> dict[str, Any]:
 
 
 def _fallback_next_node(state: AgentState) -> str:
-    """无 LLM 或解析失败时，按 last_step 与 state 推断下一节点（不输出 END，由 check 决定）。"""
+    """无 LLM 或解析失败时，按 last_step 与 state 推断下一节点（意图与 flow_stage 仅作参考，不强制）。"""
     last_step = state.get("step") or ""
     intent = state.get("current_intent") or "其他"
     if last_step == "price_quote":
@@ -102,7 +102,7 @@ def _fallback_next_node(state: AgentState) -> str:
     if last_step == "recommend":
         return "chat"
     if last_step == "collect_requirements":
-        return "recommend"
+        return "recommend" if state.get("requirements_ready") else "collect_requirements"
     if last_step == "collect_recommend_params" and state.get("recommend_params_ready"):
         return "recommend"
     if last_step == "collect_recommend_params":
@@ -149,9 +149,12 @@ def router_planner(
             "next_node": next_node,
             "task_split": False,
             "plan_tasks": [],
+            "thinking_steps": append_thinking_step(state, f"规划下一步：{next_node}"),
         }
 
     last_step = state.get("step") or "（未知）"
+    flow_stage = (state.get("flow_stage") or "").strip()
+    requirements_ready = "是" if state.get("requirements_ready") else "否"
     prompt_tpl = _load_prompt(ROUTER_PLANNER_PROMPT_PATH)
     prompt = (
         prompt_tpl.replace("{{current_intent}}", current_intent or "（未知）")
@@ -160,6 +163,8 @@ def router_planner(
         .replace("{{recent_messages}}", recent)
         .replace("{{rag_context}}", rag_summary)
         .replace("{{last_step}}", last_step)
+        .replace("{{flow_stage}}", flow_stage or "（无）")
+        .replace("{{requirements_ready}}", requirements_ready)
     )
 
     try:
@@ -186,6 +191,7 @@ def router_planner(
         "next_node": next_node,
         "task_split": parsed["task_split"],
         "plan_tasks": parsed["plan_tasks"],
+        "thinking_steps": append_thinking_step(state, f"规划下一步：{next_node}"),
     }
 
 

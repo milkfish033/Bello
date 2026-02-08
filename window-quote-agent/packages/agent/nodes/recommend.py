@@ -4,7 +4,7 @@ import re
 from pathlib import Path
 from typing import Any, Callable
 
-from packages.agent.state import AgentState, next_step_count
+from packages.agent.state import AgentState, append_thinking_step, next_step_count
 
 RECOMMEND_PROMPT_PATH = Path(__file__).resolve().parent.parent / "prompts" / "recommend.md"
 
@@ -95,6 +95,7 @@ def recommend(
         "selection": selection,
         "selection_ready": selection_ready,
         "rag_context": rag_context,
+        "thinking_steps": append_thinking_step(state, "根据需求检索并推荐产品系列"),
     }
 
 

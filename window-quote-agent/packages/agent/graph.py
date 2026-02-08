@@ -25,6 +25,21 @@ ROUTER_NEXT_NODES = (
     "generate_quote",
 )
 
+# 报价相关节点：进入前必须已有 requirement，否则先走 collect_requirements
+QUOTE_NODES_REQUIRE_REQUIREMENTS = ("price_quote", "generate_quote")
+
+
+def _has_requirements(state: AgentState) -> bool:
+    """是否已收集到至少一项需求（宽、高、地点、开扇数），用于进入报价前校验。"""
+    if state.get("requirements_ready"):
+        return True
+    req = state.get("requirements") or {}
+    for k in ("w", "h", "location", "opening_count"):
+        v = req.get(k)
+        if v is not None and (not isinstance(v, str) or (v and str(v).strip())):
+            return True
+    return False
+
 
 def _route_after_check(state: AgentState) -> str:
     """check 之后：若 should_end 或 step_count >= max_step 则 END，否则交给 router（planner）决定下一步。max_step 默认 10。"""
@@ -37,16 +52,26 @@ def _route_after_check(state: AgentState) -> str:
 
 
 def _route_after_router(state: AgentState) -> str:
-    """router 之后：按 planner 输出的 next_node 分支；若无则按 last_step 与 intent 做 fallback。"""
+    """router 之后：以 planner 输出的 next_node 为准（意图与上下文仅作参考，由 router 自由判断）。
+    仅做合法性校验：进入 price_quote / generate_quote 前须有 requirement，否则先走 collect_requirements。
+    """
     next_node = (state.get("next_node") or "").strip()
     if next_node in ROUTER_NEXT_NODES:
+        # 进入报价/生成报价单前校验：无 requirement 则先收集
+        if next_node in QUOTE_NODES_REQUIRE_REQUIREMENTS and not _has_requirements(state):
+            return "collect_requirements"
         return next_node
     last_step = state.get("step") or ""
     intent = state.get("current_intent") or "其他"
     if last_step == "price_quote":
-        return "generate_quote"
+        # 生成报价单前也需有 requirement
+        if _has_requirements(state):
+            return "generate_quote"
+        return "collect_requirements"
     if last_step == "recommend" and intent == "价格咨询":
-        # 进入报价前需有具体产品型号（如 series_id），否则回到 chat 继续收集/确认
+        # 进入报价前需有具体产品型号（如 series_id），否则回到 chat 继续收集/确认；且必须有 requirement
+        if not _has_requirements(state):
+            return "collect_requirements"
         if state.get("selection_ready") or (state.get("selection") or {}).get("series_id"):
             return "price_quote"
         return "chat"

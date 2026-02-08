@@ -1,7 +1,7 @@
 """闲聊节点：其他/公司介绍/产品咨询 → 直接用模型返回；可选 RAG 等工具由模型按需调用。"""
 from typing import Any, Callable
 
-from packages.agent.state import AgentState, next_step_count
+from packages.agent.state import AgentState, append_thinking_step, next_step_count
 
 
 def _last_user_message(state: AgentState) -> str:
@@ -84,7 +84,13 @@ def _chat_with_tools(
 
     if response is None:
         messages.append({"role": "assistant", "content": ""})
-        return {"step": "chat", "step_count": next_step_count(state), "messages": messages, "rag_context": rag_context}
+        return {
+            "step": "chat",
+            "step_count": next_step_count(state),
+            "messages": messages,
+            "rag_context": rag_context,
+            "thinking_steps": append_thinking_step(state, "生成回复（闲聊/产品咨询）"),
+        }
     final_content = getattr(response, "content", None) or str(response)
     if isinstance(final_content, list):
         parts = [
@@ -93,7 +99,13 @@ def _chat_with_tools(
         ]
         final_content = "\n".join(parts)
     messages.append({"role": "assistant", "content": final_content})
-    return {"step": "chat", "step_count": next_step_count(state), "messages": messages, "rag_context": rag_context}
+    return {
+        "step": "chat",
+        "step_count": next_step_count(state),
+        "messages": messages,
+        "rag_context": rag_context,
+        "thinking_steps": append_thinking_step(state, "生成回复（闲聊/产品咨询）"),
+    }
 
 
 def chat(
@@ -113,7 +125,12 @@ def chat(
     messages = list(state.get("messages") or [])
     response = chat_completion(messages)
     messages.append({"role": "assistant", "content": response})
-    return {"step": "chat", "step_count": next_step_count(state), "messages": messages}
+    return {
+        "step": "chat",
+        "step_count": next_step_count(state),
+        "messages": messages,
+        "thinking_steps": append_thinking_step(state, "生成回复（闲聊/产品咨询）"),
+    }
 
 
 def create_chat_node(

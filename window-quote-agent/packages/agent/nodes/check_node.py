@@ -5,7 +5,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from packages.agent.state import AgentState, next_step_count
+from packages.agent.state import AgentState, append_thinking_step, next_step_count
 
 CHECK_PROMPT_PATH = Path(__file__).resolve().parent.parent / "prompts" / "check.md"
 
@@ -108,6 +108,20 @@ def check_node(state: AgentState, *, llm: Any = None) -> dict[str, Any]:
         should_end = (last_step == "generate_quote")
         return {"step_count": next_step_count(state), "should_end": should_end}
 
+    # 刚向用户索要参数/需求时，必须结束本轮，等用户回复后再继续（避免同一轮继续 recommend/chat 导致“思考流程”与“实际回复”不一致）
+    if last_step == "collect_recommend_params" and not state.get("recommend_params_ready"):
+        return {
+            "step_count": next_step_count(state),
+            "should_end": True,
+            "thinking_steps": append_thinking_step(state, "已向用户索要推荐参数，结束本轮等待回复"),
+        }
+    if last_step == "collect_requirements" and not state.get("requirements_ready"):
+        return {
+            "step_count": next_step_count(state),
+            "should_end": True,
+            "thinking_steps": append_thinking_step(state, "已向用户索要报价需求，结束本轮等待回复"),
+        }
+
     prompt_tpl = _load_prompt()
     prompt = (
         prompt_tpl.replace("{{last_step}}", last_step)
@@ -126,7 +140,12 @@ def check_node(state: AgentState, *, llm: Any = None) -> dict[str, Any]:
     except Exception:
         response_text = ""
     should_end = _parse_check_response(response_text)
-    return {"step_count": next_step_count(state), "should_end": should_end}
+    step_desc = "判断结束本轮" if should_end else "继续对话，规划下一步"
+    return {
+        "step_count": next_step_count(state),
+        "should_end": should_end,
+        "thinking_steps": append_thinking_step(state, step_desc),
+    }
 
 
 def create_check_node(llm: Any = None):

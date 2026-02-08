@@ -1,7 +1,7 @@
 """报价单生成节点：根据 price_result 生成 Markdown 报价单。"""
 from typing import Any
 
-from packages.agent.state import AgentState, next_step_count
+from packages.agent.state import AgentState, append_thinking_step, next_step_count
 
 
 def generate_quote(state: AgentState) -> dict[str, Any]:
@@ -33,4 +33,13 @@ def generate_quote(state: AgentState) -> dict[str, Any]:
         lines.append(f"*系列：{series_id}*")
 
     quote_md = "\n".join(lines)
-    return {"step": "generate_quote", "step_count": next_step_count(state), "quote_md": quote_md}
+    messages = list(state.get("messages") or [])
+    messages.append({"role": "assistant", "content": quote_md})
+    return {
+        "step": "generate_quote",
+        "step_count": next_step_count(state),
+        "messages": messages,
+        "quote_md": quote_md,
+        "flow_stage": "",  # 报价流程结束，清空阶段以便后续轮次可重新意图识别
+        "thinking_steps": append_thinking_step(state, "生成报价单"),
+    }

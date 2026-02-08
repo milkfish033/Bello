@@ -1,10 +1,14 @@
-"""需求采集节点：从用户消息中提取尺寸、地点等，更新 state.requirements。"""
+"""需求采集节点：从用户消息中提取尺寸、地点等，更新 state.requirements。
+
+主路径：LLM 返回结构化 JSON（见 collect_requirements.md），解析后作为提取结果。
+规则仅作兜底：当 LLM 未解析出某字段（如 opening_count）时，才用规则从原文补全，避免重复索要。
+"""
 import json
 import re
 from pathlib import Path
 from typing import Any, Callable
 
-from packages.agent.state import AgentState, next_step_count
+from packages.agent.state import AgentState, append_thinking_step, next_step_count
 
 COLLECT_PROMPT_PATH = Path(__file__).resolve().parent.parent / "prompts" / "collect_requirements.md"
 
@@ -27,6 +31,67 @@ def _has_any_requirement(requirements: dict[str, Any]) -> bool:
 
 def _ask_message() -> str:
     return "请提供窗户的尺寸（宽、高，单位米）、安装地点或城市、以及开扇数量等，以便为您报价。可简要描述即可。"
+
+
+def _confirm_message(merged: dict[str, Any]) -> str:
+    """已采集到至少一项参数时，返回简短确认，保证用户始终看到回复。"""
+    return "已记录您的需求，正在为您推荐合适产品。"
+
+
+def _off_topic_in_flow_message() -> str:
+    """用户输入无法解析为报价参数时（如闲聊/换话题），在报价流程内仍须有回复，避免空响应。"""
+    return "当前正在为您报价，请先补充尺寸（宽、高）或安装地点；若想换其他话题可以直接说。"
+
+
+def _extract_w_h_from_text(text: str) -> tuple[float | None, float | None]:
+    """兜底：仅当 LLM 未返回 w/h 时，从用户原文规则抽取宽高（米）。主路径仍依赖 LLM 结构化 JSON。"""
+    if not (text or text.strip()):
+        return (None, None)
+    t = text.strip()
+    w, h = None, None
+    # 宽度为1 / 宽1 / 宽 1.5米（单位由 LLM 处理，此处仅抽数字）
+    m = re.search(r"宽\s*度?\s*为?\s*(\d+(?:\.\d+)?)", t, re.IGNORECASE)
+    if m:
+        try:
+            w = float(m.group(1))
+        except (ValueError, TypeError):
+            pass
+    m = re.search(r"高\s*度?\s*为?\s*(\d+(?:\.\d+)?)", t, re.IGNORECASE)
+    if m:
+        try:
+            h = float(m.group(1))
+        except (ValueError, TypeError):
+            pass
+    return (w, h)
+
+
+def _extract_opening_count_from_text(text: str) -> int | None:
+    """兜底：仅当 LLM 未返回 opening_count 时，从用户原文规则抽取开扇数。主路径仍依赖 LLM 结构化 JSON。"""
+    if not (text or text.strip()):
+        return None
+    t = text.strip()
+    # 开扇数量1 / 开扇数量 2 / 开扇数量为3 / 开扇1 / 1扇 / 单扇
+    m = re.search(r"开扇数量\s*为?\s*(\d+)", t, re.IGNORECASE)
+    if m:
+        try:
+            return int(m.group(1))
+        except (ValueError, TypeError):
+            pass
+    m = re.search(r"开扇\s*(\d+)", t)
+    if m:
+        try:
+            return int(m.group(1))
+        except (ValueError, TypeError):
+            pass
+    m = re.search(r"(\d+)\s*扇", t)
+    if m:
+        try:
+            return int(m.group(1))
+        except (ValueError, TypeError):
+            pass
+    if "单扇" in t or "一扇" in t:
+        return 1
+    return None
 
 
 def _parse_requirements_from_response(response: str) -> dict[str, Any]:
@@ -82,6 +147,17 @@ def collect_requirements(
     llm_messages = [{"role": "user", "content": prompt}]
     response = chat_completion(llm_messages)
     extracted = _parse_requirements_from_response(response)
+    # 以 LLM 结构化 JSON 为准；仅当 LLM 未解析出某字段时用规则兜底，保证「宽度为1」等能推进状态
+    if extracted.get("opening_count") is None:
+        n = _extract_opening_count_from_text(user_message)
+        if n is not None:
+            extracted["opening_count"] = n
+    if extracted.get("w") is None or extracted.get("h") is None:
+        rw, rh = _extract_w_h_from_text(user_message)
+        if rw is not None:
+            extracted["w"] = rw
+        if rh is not None:
+            extracted["h"] = rh
     existing = dict(state.get("requirements") or {})
     merged = {**existing, **extracted}
 
@@ -93,12 +169,23 @@ def collect_requirements(
             "messages": messages,
             "requirements": merged,
             "requirements_ready": False,
+            "flow_stage": "collect_requirements",
+            "thinking_steps": append_thinking_step(state, "收集报价需求（尺寸/地点/开扇等）"),
         }
+    # 有至少一项参数：必须产出至少一条助手回复，避免 flow_stage 锁定下出现空响应
+    if extracted:
+        content = _confirm_message(merged)
+    else:
+        content = _off_topic_in_flow_message()
+    messages.append({"role": "assistant", "content": content})
     return {
         "step": "collect_requirements",
         "step_count": next_step_count(state),
+        "messages": messages,
         "requirements": merged,
         "requirements_ready": True,
+        "flow_stage": "collect_requirements",
+        "thinking_steps": append_thinking_step(state, "收集报价需求（尺寸/地点/开扇等）"),
     }
 
 

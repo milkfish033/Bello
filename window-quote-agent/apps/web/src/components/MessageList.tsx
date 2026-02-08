@@ -14,6 +14,16 @@ export function MessageList({ messages }: Props) {
               <div className="message-avatar message-avatar--assistant" />
             )}
             <div className="message-content">
+              {msg.role === "assistant" && msg.thinking_steps && msg.thinking_steps.length > 0 && !msg.status && (
+                <details className="message-thinking">
+                  <summary className="message-thinking-summary">思考过程</summary>
+                  <ul className="message-thinking-steps">
+                    {msg.thinking_steps.map((step, j) => (
+                      <li key={j}>{step}</li>
+                    ))}
+                  </ul>
+                </details>
+              )}
               {msg.status === "loading" ? (
                 <div className="message-loading">
                   <span className="dot" />
